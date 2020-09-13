@@ -2,4 +2,4 @@ module smart-cache/viewer
 
 go 1.15
 
-require github.com/hajimehoshi/ebiten v1.11.7
+require github.com/gen2brain/raylib-go v0.0.0-20200905153824-5b0944b5567a
