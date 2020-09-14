@@ -14,18 +14,13 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-type ChoiceAction int
-
 const (
 	FPS          = 60
 	WindowWidth  = 1024
 	WindowHeight = 769
 )
 
-const (
-	ActionAdd ChoiceAction = iota - 2
-	ActionDelete
-)
+type ActionOrEventType string
 
 type Tick int
 
@@ -48,12 +43,14 @@ func init() {
 }
 
 type ChoiceRecord struct {
-	Tick     Tick
-	Filename int64
-	Size     float64
-	NumReq   int64
-	DeltaT   int64
-	Action   ChoiceAction
+	Tick          Tick
+	ActionOrEvent ActionOrEventType
+	CacheSize     float64
+	CacheCapacity float64
+	Filename      int64
+	Size          float64
+	NumReq        int64
+	DeltaT        int64
 }
 
 func recordGenerator(csvReader *csv.Reader, curFile *os.File) chan ChoiceRecord { //nolint:ignore,funlen
@@ -74,31 +71,26 @@ func recordGenerator(csvReader *csv.Reader, curFile *os.File) chan ChoiceRecord 
 				log.Fatal(err)
 			}
 
-			// fmt.Println(record)
+			fmt.Println(record)
 
 			tick, _ := strconv.ParseInt(record[0], 10, 64)
-			filename, _ := strconv.ParseInt(record[1], 10, 64)
-			size, _ := strconv.ParseFloat(record[2], 64)
-			numReq, _ := strconv.ParseInt(record[3], 10, 64)
-			deltaT, _ := strconv.ParseInt(record[4], 10, 64)
-			action := record[5]
-
-			var actionVal ChoiceAction
-
-			switch {
-			case action == "ADD":
-				actionVal = ActionAdd
-			case action == "DELETE":
-				actionVal = ActionDelete
-			}
+			action := ActionOrEventType(record[1])
+			cacheSize, _ := strconv.ParseFloat(record[2], 64)
+			cacheCapacity, _ := strconv.ParseFloat(record[3], 64)
+			filename, _ := strconv.ParseInt(record[4], 10, 64)
+			size, _ := strconv.ParseFloat(record[5], 64)
+			numReq, _ := strconv.ParseInt(record[6], 10, 64)
+			deltaT, _ := strconv.ParseInt(record[7], 10, 64)
 
 			curRecord := ChoiceRecord{
-				Tick:     Tick(tick),
-				Filename: filename,
-				Size:     size,
-				NumReq:   numReq,
-				DeltaT:   deltaT,
-				Action:   actionVal,
+				Tick:          Tick(tick),
+				ActionOrEvent: action,
+				CacheSize:     cacheSize,
+				CacheCapacity: cacheCapacity,
+				Filename:      filename,
+				Size:          size,
+				NumReq:        numReq,
+				DeltaT:        deltaT,
 			}
 
 			// fmt.Println(curRecord)
@@ -191,22 +183,16 @@ func main() {
 
 		curRow, inBuffer := buffer[tick]
 		if inBuffer {
-			action := ""
-
-			switch curRow.Action {
-			case ActionAdd:
-				action = "ADD"
-			case ActionDelete:
-				action = "DELETE"
-			}
-
-			rl.DrawText(fmt.Sprintf("%s -> %d", action, curRow.Filename), 0, 24, 24, rl.RayWhite)
+			rl.DrawText(fmt.Sprintf("%s -> %d", curRow.ActionOrEvent, curRow.Filename), 0, 24, 24, rl.RayWhite)
 		}
 
 		// Draw
 		rl.BeginDrawing()
 
 		rl.ClearBackground(rl.Black)
+
+		rl.DrawRectangle(142, 142, 1, 1, rl.Red)
+		rl.DrawRectangleLines(160, 320, 80, 60, rl.Orange)
 
 		rl.DrawText(fmt.Sprintf("Tick: %d", tick), 0, 0, 24, rl.RayWhite)
 
